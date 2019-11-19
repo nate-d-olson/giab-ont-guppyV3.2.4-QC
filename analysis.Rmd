@@ -1,0 +1,340 @@
+---
+title: "GIAB UL Guppy 3.2.4 QC"
+author: "Nate Olson"
+date: '`r Sys.Date()`'
+output: 
+    bookdown::html_document2:
+        toc: true
+        toc_float: true
+        df_print: paged
+        code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+```
+
+# Summary
+
+## Objective
+
+Validate re-basecalled GIAB ultra-long minion dataset prior to public release. 
+
+
+## Approach
+
+- Read Info Validation 
+    - Compare sequencing summary file outputs   
+
+- Phased Bam File Check  
+    - Make table summarizing output  
+
+- Phasing QC  
+    - Compare phasing stats for final and V3.2.4  
+    - Targeted QC region analysis  
+         - Manual Curation  
+         - Summary stats: coverage and number of reads mapped to haplotypes  
+
+# Analysis
+
+## Read Info Validation
+Verify number of reads and read length distributions are similar between guppy V3.2.4 and final release.  
+
+<!-- Code copied from `~/Projects/giab-ultra-long-ont/guppy_3.2_qc/analysis/Rmd` on Nate's iMac -->
+
+`ultra-long-ont.sequencing_summary.txt.gz` available at `ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/HG002_NA24385_son/Ultralong_OxfordNanopore/final/ultra-long-ont.sequencing_summary.txt.gz`
+
+
+### File MD5 check
+```{r}
+final_seq_summary <- here("data","final", 
+                          "ultra-long-ont.sequencing_summary.txt.gz")
+
+final_seq_summary_md5 <- tools::md5sum(files = final_seq_summary)
+
+## Veriftying MD5 check matches MD5 from giab ftp site
+final_seq_summary_md5 == "2ee553ece780a45f2e477ef21106b609"
+```
+
+### Loading Final Sequencing Summary Data
+```{r}
+final_df <- read_tsv(final_seq_summary)
+```
+
+### Loading Guppy V3.2.4 Sequencing Summary Data
+```{r message = FALSE}
+guppy3_df <- list.files(path = "data/guppy_V3.2.4/sequencing_summary", 
+                        full.names = TRUE, 
+                        recursive = TRUE, pattern = "sequencing_summary.txt") %>% 
+    set_names(str_extract(.,"(?<=fastq/).*(?=/s)")) %>% 
+    map_dfr(read_tsv)
+```
+
+### Comparing Combined Sequencing Summary Files
+Data frames combined by read_id and other shared columns.  
+The merged data frame will have the same number of rows as the individual data frames if the two datasets contain the same reads.
+
+```{r}
+merged_df <- guppy3_df %>% 
+    select(read_id, filename, passes_filtering) %>% 
+    rename(g_filename = filename, g_passes = passes_filtering) %>% 
+    full_join(final_df)
+```
+
+
+```{r}
+nrow(merged_df) == nrow(guppy3_df)
+nrow(merged_df) == nrow(final_df)
+```
+
+
+## Phased Bam File Check  
+
+### Phased bams passing samtools checks
+
+#### Samtools quickcheck
+No output indicates no errors
+
+###### hs37d5
+```{bash}
+samtools quickcheck -v /Volumes/giab/data/alignment/AshkenazimTrio/Ultralong_OxfordNanopore/ULbams_guppy3.2.4/phased_hs37d5.bam
+```
+
+###### GRCH38
+```{bash}
+samtools quickcheck -v /Volumes/giab/data/alignment/AshkenazimTrio/Ultralong_OxfordNanopore/ULbams_guppy3.2.4/phased_GRCh38.bam
+```
+
+#### Samtools flagstat
+
+##### hs37d5
+
+```{bash}
+cat data/guppy_V3.2.4/stats/phase_hs37d5_flagstat.tsv
+```
+
+##### GRCh38
+```{bash}
+cat data/guppy_V3.2.4/stats/phase_GRCh38_flagstat.tsv
+```
+
+#### Samtools idxstats
+
+##### hs37d5
+
+```{bash}
+cat data/guppy_V3.2.4/stats/phase_hs37d5_idxstats.tsv
+```
+
+##### GRCh38
+```{bash}
+cat data/guppy_V3.2.4/stats/phase_GRCh38_idxstats.tsv
+```
+
+
+### Summary Table
+__TODO or Cut__
+
+## Phasing QC
+
+### Whatshap output comparison
+
+Final Release WhatHap log summary for hs37d5
+```
+== SUMMARY ==
+Total alignments processed:                  17670197
+Alignments that could be tagged:              5688334
+Alignments spanning multiple phase sets:         4942
+```
+
+Guppy V3.2.4 WhatHap log summary for hs37d5
+```
+== SUMMARY ==
+Total alignments processed:                  17931775
+Alignments that could be tagged:              5972507
+Alignments spanning multiple phase sets:         5227
+```
+
+Guppy V3.2.4 WhatsHap log summary for GRCh38
+```
+== SUMMARY ==
+Total alignments processed:                  17966914
+Alignments that could be tagged:              6048453
+Alignments spanning multiple phase sets:        54943
+```
+
+__Take away__: Differences in the number of total reads for the release and GuppyV3.2.4, potentially due to the Final release whatshap log is from the initial incomplete dataset. 
+
+### Targeted QC Region Analysis
+<!-- Not sure which of this should move to a seperate file / project -->
+
+
+
+### Phasing Validation Results
+
+#### GRCh38
+Loading phasing eval results
+
+```{r}
+## Manual curation results
+phase_qual_df <- read_csv("data/phase_manual_curation_GRCh38_qual.csv")
+
+## Quant stats results
+phase_bedcov_total_df <- here("scratch", 
+                              "phase_subset_target_regions_bedcov.tsv") %>% 
+  read_tsv(col_names = c("CHROM","START","END","TOTAL"))
+
+phase_bedcov_HP1_df <- here("scratch", 
+                              "phase_subset_target_regions_HP1_bedcov.tsv") %>% 
+  read_tsv(col_names = c("CHROM","START","END","HP1"))
+
+phase_bedcov_HP2_df <- here("scratch", 
+                              "phase_subset_target_regions_HP2_bedcov.tsv") %>% 
+  read_tsv(col_names = c("CHROM","START","END","HP2"))
+phase_bedcov_df <- phase_bedcov_total_df %>% 
+  left_join(phase_bedcov_HP1_df) %>% 
+  left_join(phase_bedcov_HP2_df) %>% 
+  left_join(phase_qual_df)
+
+## Calculating Haplotype ratio and phased / unphased ratio
+phase_ratio_df <- phase_bedcov_df %>% 
+  mutate(CHROM = factor(CHROM, levels = paste0("chr", 1:22))) %>% 
+  rowwise() %>% 
+  mutate(HPratio = min(HP1, HP2)/ max(HP1, HP2), ## Exp = 1
+         UNratio = (TOTAL - HP1 - HP2)/ TOTAL) # Exp = 0
+```
+HP1 and HP2 are the number of reads assigned to the haplotypes per region calculated using bedcov.
+TOTAL is the number of reads in the data set mapped to the region, includes HP1, HP2, and unphased reads. 
+
+```{r fig.cap = "Phasing ratio statistics for targeted regions. HPratio = min(HP1,HP2)/max(HP1,HP2) and UNratio = (TOTAL - HP1 - HP2)/ TOTAL."}
+phase_ratio_df %>% 
+  select(CHROM, START, HPratio, UNratio) %>% 
+  gather(Metric, Ratio, -CHROM, -START) %>% 
+  ggplot() + 
+    geom_density(aes(x = Ratio, fill = Metric)) + theme_bw()
+```
+
+HPratio of 0 indicates all the phased reads were assigned to one of the two haplotypes. 
+
+```{r fig.cap = "Scatter plot of unphased and haplotype ratios."}
+phase_ratio_df %>% 
+  ggplot() + geom_point(aes(x = HPratio, y = UNratio)) + theme_bw()
+```
+
+
+```{r fig.cap = "Proportion of unphased reads (UN) and reads assigned to the two haplotypes for each of the 220 targeted `easy` regions."}
+phase_count_long <- phase_ratio_df %>% 
+    group_by(CHROM) %>% 
+  mutate(Region = 1:n()) %>% 
+  ungroup() %>% 
+  mutate(UN = TOTAL - HP1 - HP2) %>% 
+  select(CHROM, Region, HP1, HP2, UN) %>% 
+  gather(phase, reads, -CHROM, -Region)
+
+phase_count_long %>% 
+  ggplot() + geom_bar(aes(x = Region, y = reads, fill = phase), 
+                      stat = "identity", position = "fill") + 
+  facet_wrap(~CHROM) + theme_bw()
+```
+
+Corelating qualitative and quantitative phasing results - in general the qualitative and quantitative results are fairly consistent. A few outliers, which are likely errors from entering manual curation results into the spreadsheet. 
+
+```{r}
+phase_ratio_df %>% ggplot() + 
+  geom_boxplot(aes(x = SCORE, y = HPratio, group = SCORE)) + 
+  geom_jitter(aes(x = SCORE, y = HPratio, color = CHROM)) + 
+  theme_bw()
+```
+
+```{r}
+phase_ratio_df %>% ggplot() + 
+  geom_boxplot(aes(x = SCORE, y = UNratio, group = SCORE)) + 
+  geom_jitter(aes(x = SCORE, y = UNratio, color = CHROM)) + 
+  theme_bw()
+```
+
+#### Good phasing examples
+```{r}
+best_region <- phase_ratio_df %>% 
+  filter(HPratio > 0.95) %>% 
+  ungroup() %>% 
+  top_n(3, -UNratio) %>% 
+  {paste(.$CHROM, .$START, .$END, "slop1000.png", sep = "_")}
+
+knitr::include_graphics(here("data","phase_manual_curation", best_region))
+```
+
+Poor phasing examples
+```{r}
+poor_region <- phase_ratio_df %>% 
+  filter(UNratio < 0.4) %>% 
+  ungroup() %>% 
+  top_n(3, -HPratio) %>% 
+  {paste(.$CHROM, .$START, .$END, "slop1000.png", sep = "_")}
+
+knitr::include_graphics(here("data","phase_manual_curation", poor_region))
+```
+
+
+# System Information
+
+```{r}
+s_info <- devtools::session_info()
+print(s_info$platform)
+```
+
+## Loaded Packages
+```{r}
+as.data.frame(s_info$packages) %>% 
+  filter(attached) %>% 
+  select(package, loadedversion, date, source) %>% 
+  knitr::kable()
+```
+
+
+<!-- Version information for any command line bioinformatic tools used -->
+<!-- ## Software Versions -->
+<!-- __BEDtools__ -->
+<!-- ```{r} -->
+<!-- system("bedtools --version",intern = TRUE) -->
+<!-- ``` -->
+
+<!-- Extra code ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!-- Code to investigate differences  in sequencing summary data frames-->
+<!-- There are no reads in the guppy3 dataset that are not in the final dataset -->
+<!-- ```{r} -->
+<!-- guppy3_unique <- merged_df %>% filter(is.na(filename)) -->
+<!-- nrow(guppy3_unique) -->
+<!-- ``` -->
+
+<!-- There are no reads in the final dataset that are not in the guppy3 dataset -->
+<!-- ```{r} -->
+<!-- final_unique <- merged_df %>% filter(is.na(g_filename)) -->
+<!-- nrow(final_unique) -->
+<!-- ``` -->
+
+
+<!-- Additional rows in guppy3 compared to final due to duplicate reads. -->
+
+<!-- Issue with duplicate reads due to ???? -->
+<!-- ```{r} -->
+<!-- duplicate_reads <- merged_df %>%  -->
+<!--     group_by(read_id) %>%  -->
+<!--     mutate(count = n()) %>%  -->
+<!--     filter(count > 1) -->
+<!-- ``` -->
+
+
+<!-- run_ids for duplicate reads -->
+<!-- ```{r} -->
+<!-- duplicate_reads %>%  -->
+<!--     ungroup() %>%  -->
+<!--     select(g_filename, run_id) %>%  -->
+<!--     distinct() %>%  -->
+<!--     arrange(run_id) -->
+<!-- ``` -->
+
+
+

@@ -1,0 +1,126 @@
+---
+title: "Make Phase Eval Target Beds"
+author: "Nate Olson"
+date: '`r Sys.Date()`'
+output: 
+    bookdown::html_document2:
+        toc: true
+        toc_float: true
+        df_print: paged
+        code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+```
+
+
+# Objective
+Generate bed files with easy regions for use in validating phasing results. 
+
+
+Targeted regions, intersection of refseq CDS and V3.3.2 bed
+- Input bed: Intersection of refseq CDS, and V3.3.2 bed (not including V0.6 bed as there is no comparable bed for 38)
+
+# Inputs
+`phase_eval_targets_*bed` files generated using `make_phase_eval_bed.sh`. 
+
+# Subset target region selection. 
+
+## GRCh37
+```{r}
+phase_target_37 <- here("resources","phase_eval_targets_HG002_GRCh37.bed") %>% 
+    read_tsv(col_types = "cdd", col_names = c("CHROM", "START", "END"))
+
+## Selecting 10 regions per chrom
+set.seed("53117")
+target_subset <- phase_target_37 %>% 
+    mutate(SIZE = END - START) %>% 
+    group_by(CHROM) %>% 
+    top_n(10, SIZE)
+
+subset_targets_bed <- here("resources","phase_eval_targets_subset_GRCh37.bed")
+target_subset %>% select(-SIZE) %>% 
+    write_tsv(subset_targets_bed, 
+              col_names = FALSE)
+
+## Writing to vcf for manual curation
+write_csv(target_subset, here("data","phase_manual_curation_GRCh37.csv"))
+```
+
+bgzip and tabix for IGV
+```{bash}
+bgzip -f ../resources/phase_eval_targets_subset_GRCh37.bed
+tabix ../resources/phase_eval_targets_subset_GRCh37.bed.gz
+```
+
+Creating batch script to generate IGV snapshots
+```{bash}
+bedtools igv \
+    -i ../resources/phase_eval_targets_subset_GRCh37.bed.gz \
+    -path ../data/phase_manual_curation/GRCh37 \
+    -sess ../resources/igv_session_giab-ul-GRCh37.xml \
+    -slop 1000 \
+    > ../scripts/phase_eval_GRCh37_igv.batch
+```
+
+## GRCh38
+```{r}
+phase_target_38 <- here("resources","phase_eval_targets_HG002_GRCh38.bed") %>% 
+    read_tsv(col_types = "cdd", col_names = c("CHROM", "START", "END"))
+
+## Selecting 10 regions per chrom
+set.seed("53117")
+target_subset <- phase_target_38 %>% 
+    mutate(SIZE = END - START) %>% 
+    mutate(CHROM = factor(CHROM, levels = paste0("chr",1:22))) %>% 
+    group_by(CHROM) %>% 
+    top_n(10, SIZE) 
+
+
+subset_targets_bed <- here("resources","phase_eval_targets_subset_GRCh38.bed")
+target_subset %>% select(-SIZE) %>% 
+    write_tsv(subset_targets_bed, 
+              col_names = FALSE)
+
+## Writing to vcf for manual curation
+write_csv(target_subset, here("data","phase_manual_curation_GRCh38.csv"))
+```
+
+bgzip and tabix for IGV
+```{bash}
+bgzip -f ../resources/phase_eval_targets_subset_GRCh38.bed
+tabix ../resources/phase_eval_targets_subset_GRCh38.bed.gz
+```
+
+Creating batch script to generate IGV snapshots
+```{bash}
+bedtools igv \
+    -i ../resources/phase_eval_targets_subset_GRCh38.bed.gz \
+    -path ../data/phase_manual_curation/GRCh38 \
+    -sess resources/igv_session_giab-ul-GRCh38.xml \
+    -slop 1000 \
+    > ../scripts/phase_eval_GRCh38_igv.batch
+```
+
+
+# System Information
+
+```{r}
+s_info <- devtools::session_info()
+print(s_info$platform)
+```
+```{r}
+as.data.frame(s_info$packages) %>% 
+  filter(attached) %>% 
+  select(package, loadedversion, date, source) %>% 
+  knitr::kable()
+```
+
+## Software Versions
+__BEDtools__
+```{r}
+system("bedtools --version",intern = TRUE)
+```

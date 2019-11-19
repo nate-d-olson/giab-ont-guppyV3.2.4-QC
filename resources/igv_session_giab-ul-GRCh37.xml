@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<Session genome="hg19" hasGeneTrack="true" hasSequenceTrack="true" locus="chr1:158265377-158301104" version="8">
+    <Resources>
+        <Resource path="../../../../../Volumes/giab/analysis/release/AshkenazimTrio/HG002_NA24385_son/NISTv3.3.2/GRCh37/HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_noinconsistent.bed"/>
+        <Resource path="../../../../../Volumes/giab/data/alignment/AshkenazimTrio/Ultralong_OxfordNanopore/ULbams_guppy3.2.4/phased_hs37d5.bam"/>
+        <Resource path="phase_eval_targets_subset_GRCh38.bed.gz"/>
+        <Resource path="../../../../../Volumes/giab/analysis/release/AshkenazimTrio/HG002_NA24385_son/NISTv3.3.2/GRCh37/HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_triophased.vcf.gz"/>
+        <Resource path="../../../../../Volumes/giab/analysis/benchmarking-tools/resources/stratification-bed-files/FunctionalRegions/refseq_union_cds.bed.gz"/>
+    </Resources>
+    <Panel height="191" name="DataPanel" width="1890">
+        <Track clazz="org.broad.igv.variant.VariantTrack" color="0,0,178" displayMode="EXPANDED" featureVisibilityWindow="1998000" fontSize="24" id="/Volumes/giab/analysis/release/AshkenazimTrio/HG002_NA24385_son/NISTv3.3.2/GRCh37/HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_triophased.vcf.gz" name="HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_triophased.vcf.gz" siteColorMode="ALLELE_FREQUENCY" squishedHeight="1" visible="true"/>
+    </Panel>
+    <Panel height="666" name="Panel1574183901708" width="1890">
+        <Track autoScale="true" clazz="org.broad.igv.sam.CoverageTrack" color="175,175,175" colorScale="ContinuousColorScale;0.0;69.0;255,255,255;175,175,175" fontSize="24" id="/Volumes/giab/data/alignment/AshkenazimTrio/Ultralong_OxfordNanopore/ULbams_guppy3.2.4/phased_hs37d5.bam_coverage" name="phased_hs37d5.bam Coverage" snpThreshold="0.2" visible="true">
+            <DataRange baseline="0.0" drawBaseline="true" flipAxis="false" maximum="69.0" minimum="0.0" type="LINEAR"/>
+        </Track>
+        <Track clazz="org.broad.igv.sam.SpliceJunctionTrack" fontSize="24" height="60" id="/Volumes/giab/data/alignment/AshkenazimTrio/Ultralong_OxfordNanopore/ULbams_guppy3.2.4/phased_hs37d5.bam_junctions" name="phased_hs37d5.bam Junctions" visible="false"/>
+        <Track clazz="org.broad.igv.sam.AlignmentTrack" displayMode="SQUISHED" experimentType="THIRD_GEN" fontSize="24" id="/Volumes/giab/data/alignment/AshkenazimTrio/Ultralong_OxfordNanopore/ULbams_guppy3.2.4/phased_hs37d5.bam" name="phased_hs37d5.bam" visible="true">
+            <RenderOptions colorByTag="HP" colorOption="TAG" groupByOption="TAG" groupByTag="HP"/>
+        </Track>
+    </Panel>
+    <Panel height="340" name="FeaturePanel" width="1890">
+        <Track clazz="org.broad.igv.track.SequenceTrack" fontSize="24" id="Reference sequence" name="Reference sequence" visible="true"/>
+        <Track clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" colorScale="ContinuousColorScale;0.0;423.0;255,255,255;0,0,178" fontSize="24" height="35" id="hg19_genes" name="RefSeq Genes" visible="true"/>
+        <Track clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" colorScale="ContinuousColorScale;0.0;1003.0;255,255,255;0,0,178" fontSize="24" id="/Volumes/giab/analysis/release/AshkenazimTrio/HG002_NA24385_son/NISTv3.3.2/GRCh37/HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_noinconsistent.bed" name="HG002_GRCh37_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-22_v.3.3.2_highconf_noinconsistent.bed" visible="true"/>
+        <Track clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" featureVisibilityWindow="32672692" fontSize="24" id="/Volumes/giab/analysis/benchmarking-tools/resources/stratification-bed-files/FunctionalRegions/refseq_union_cds.bed.gz" name="refseq_union_cds.bed.gz" visible="true"/>
+        <Track clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" featureVisibilityWindow="2147483647" fontSize="24" id="/Users/nolson/Projects/giab-ont-guppyV3.2.4-QC/resources/phase_eval_targets_subset_GRCh38.bed.gz" name="phase_eval_targets_subset_GRCh38.bed.gz" visible="true"/>
+    </Panel>
+    <PanelLayout dividerFractions="0.16328257191201354,0.7081218274111675"/>
+    <HiddenAttributes>
+        <Attribute name="DATA FILE"/>
+        <Attribute name="DATA TYPE"/>
+        <Attribute name="NAME"/>
+    </HiddenAttributes>
+</Session>

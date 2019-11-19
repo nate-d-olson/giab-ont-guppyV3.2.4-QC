@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<Session genome="hg38" hasGeneTrack="true" hasSequenceTrack="true" locus="chr1:151246962-151248475" path="/Volumes/GoogleDrive/Shared drives/BBD_Human_Genomics/giab-ont-guppyV3.2.4-QC/resources/igv_session_giab-ul-GRCh38.xml" version="8">
+    <Resources>
+        <Resource path="/Volumes/GoogleDrive/Shared drives/BBD_Human_Genomics/giab-ont-guppyV3.2.4-QC/resources/phase_eval_targets_subset_GRCh38.bed.gz"/>
+        <Resource path="/Volumes/giab/data/alignment/AshkenazimTrio/Ultralong_OxfordNanopore/ULbams_guppy3.2.4/phased_GRCh38.bam"/>
+        <Resource path="/Volumes/giab/analysis/GRCh38_stratification_bed_files/SegmentalDuplications/hg38.segdups_sorted_merged.bed.gz"/>
+    </Resources>
+    <Panel height="853" name="Panel1574099443712" width="2543">
+        <Track autoScale="true" clazz="org.broad.igv.sam.CoverageTrack" color="175,175,175" colorScale="ContinuousColorScale;0.0;64.0;255,255,255;175,175,175" fontSize="24" id="/Volumes/giab/data/alignment/AshkenazimTrio/Ultralong_OxfordNanopore/ULbams_guppy3.2.4/phased_GRCh38.bam_coverage" name="phased_GRCh38.bam Coverage" snpThreshold="0.2" visible="true">
+            <DataRange baseline="0.0" drawBaseline="true" flipAxis="false" maximum="64.0" minimum="0.0" type="LINEAR"/>
+        </Track>
+        <Track clazz="org.broad.igv.sam.SpliceJunctionTrack" fontSize="24" height="60" id="/Volumes/giab/data/alignment/AshkenazimTrio/Ultralong_OxfordNanopore/ULbams_guppy3.2.4/phased_GRCh38.bam_junctions" name="phased_GRCh38.bam Junctions" visible="false"/>
+        <Track clazz="org.broad.igv.sam.AlignmentTrack" displayMode="SQUISHED" experimentType="THIRD_GEN" fontSize="24" id="/Volumes/giab/data/alignment/AshkenazimTrio/Ultralong_OxfordNanopore/ULbams_guppy3.2.4/phased_GRCh38.bam" name="phased_GRCh38.bam" visible="true">
+            <RenderOptions colorByTag="HP" colorOption="TAG" groupByOption="TAG" groupByTag="HP"/>
+        </Track>
+    </Panel>
+    <Panel height="381" name="FeaturePanel" width="2543">
+        <Track clazz="org.broad.igv.track.SequenceTrack" fontSize="24" id="Reference sequence" name="Reference sequence" visible="true"/>
+        <Track clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" colorScale="ContinuousColorScale;0.0;426.0;255,255,255;0,0,178" fontSize="24" height="35" id="hg38_genes" name="Gene" visible="true"/>
+        <Track clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" colorScale="ContinuousColorScale;0.0;28.0;255,255,255;0,0,178" fontSize="24" id="/Volumes/giab/analysis/GRCh38_stratification_bed_files/SegmentalDuplications/hg38.segdups_sorted_merged.bed.gz" name="hg38.segdups_sorted_merged.bed.gz" visible="true"/>
+        <Track clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" featureVisibilityWindow="2147483647" fontSize="24" id="/Volumes/GoogleDrive/Shared drives/BBD_Human_Genomics/giab-ont-guppyV3.2.4-QC/resources/phase_eval_targets_subset_GRCh38.bed.gz" name="phase_eval_targets_subset_GRCh38.bed.gz" visible="true"/>
+    </Panel>
+    <PanelLayout dividerFractions="0.0048,0.6912"/>
+    <HiddenAttributes>
+        <Attribute name="DATA FILE"/>
+        <Attribute name="DATA TYPE"/>
+        <Attribute name="NAME"/>
+    </HiddenAttributes>
+</Session>
