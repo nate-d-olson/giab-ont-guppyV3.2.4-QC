@@ -1,5 +1,5 @@
 ---
-title: "GIAB UL Guppy 3.2.4 QC"
+title: "GIAB UL Guppy 3.2.4 Phased BAM Validation"
 author: "Nate Olson"
 date: '`r Sys.Date()`'
 output: 
@@ -20,13 +20,10 @@ library(here)
 
 ## Objective
 
-Validate re-basecalled GIAB ultra-long minion dataset prior to public release. 
+Validate re-basecalled GIAB ultra-long minion phased bams prior to public release. 
 
 
 ## Approach
-
-- Read Info Validation 
-    - Compare sequencing summary file outputs   
 
 - Phased Bam File Check  
     - Make table summarizing output  
@@ -39,55 +36,6 @@ Validate re-basecalled GIAB ultra-long minion dataset prior to public release.
 
 # Analysis
 
-## Read Info Validation
-Verify number of reads and read length distributions are similar between guppy V3.2.4 and final release.  
-
-<!-- Code copied from `~/Projects/giab-ultra-long-ont/guppy_3.2_qc/analysis/Rmd` on Nate's iMac -->
-
-`ultra-long-ont.sequencing_summary.txt.gz` available at `ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/HG002_NA24385_son/Ultralong_OxfordNanopore/final/ultra-long-ont.sequencing_summary.txt.gz`
-
-
-### File MD5 check
-```{r}
-final_seq_summary <- here("data","final", 
-                          "ultra-long-ont.sequencing_summary.txt.gz")
-
-final_seq_summary_md5 <- tools::md5sum(files = final_seq_summary)
-
-## Veriftying MD5 check matches MD5 from giab ftp site
-final_seq_summary_md5 == "2ee553ece780a45f2e477ef21106b609"
-```
-
-### Loading Final Sequencing Summary Data
-```{r}
-final_df <- read_tsv(final_seq_summary)
-```
-
-### Loading Guppy V3.2.4 Sequencing Summary Data
-```{r message = FALSE}
-guppy3_df <- list.files(path = "data/guppy_V3.2.4/sequencing_summary", 
-                        full.names = TRUE, 
-                        recursive = TRUE, pattern = "sequencing_summary.txt") %>% 
-    set_names(str_extract(.,"(?<=fastq/).*(?=/s)")) %>% 
-    map_dfr(read_tsv)
-```
-
-### Comparing Combined Sequencing Summary Files
-Data frames combined by read_id and other shared columns.  
-The merged data frame will have the same number of rows as the individual data frames if the two datasets contain the same reads.
-
-```{r}
-merged_df <- guppy3_df %>% 
-    select(read_id, filename, passes_filtering) %>% 
-    rename(g_filename = filename, g_passes = passes_filtering) %>% 
-    full_join(final_df)
-```
-
-
-```{r}
-nrow(merged_df) == nrow(guppy3_df)
-nrow(merged_df) == nrow(final_df)
-```
 
 
 ## Phased Bam File Check  
@@ -99,12 +47,12 @@ No output indicates no errors
 
 ###### hs37d5
 ```{bash}
-samtools quickcheck -v /Volumes/giab/data/alignment/AshkenazimTrio/Ultralong_OxfordNanopore/ULbams_guppy3.2.4/phased_hs37d5.bam
+# samtools quickcheck -v /Volumes/giab/data/alignment/AshkenazimTrio/Ultralong_OxfordNanopore/ULbams_guppy3.2.4/phased_hs37d5.bam
 ```
 
 ###### GRCH38
 ```{bash}
-samtools quickcheck -v /Volumes/giab/data/alignment/AshkenazimTrio/Ultralong_OxfordNanopore/ULbams_guppy3.2.4/phased_GRCh38.bam
+# samtools quickcheck -v /Volumes/giab/data/alignment/AshkenazimTrio/Ultralong_OxfordNanopore/ULbams_guppy3.2.4/phased_GRCh38.bam
 ```
 
 #### Samtools flagstat
@@ -173,6 +121,93 @@ __Take away__: Differences in the number of total reads for the release and Gupp
 
 
 ### Phasing Validation Results
+#### GRCh37
+__TODO__ Revise for 37
+Loading phasing eval results
+
+```{r}
+## Quant stats results
+phase_bedcov_total_df <- here("data", "guppy_V3.2.4", "phase_eval",  
+                              "phase_targets_subset_GRCh37_bedcov.tsv") %>% 
+  read_tsv(col_names = c("CHROM","START","END","TOTAL"))
+
+phase_bedcov_HP1_df <- here("data", "guppy_V3.2.4", "phase_eval",  
+                              "phase_targets_subset_GRCh37_HP1_bedcov.tsv") %>% 
+  read_tsv(col_names = c("CHROM","START","END","HP1"))
+
+phase_bedcov_HP2_df <- here("data", "guppy_V3.2.4", "phase_eval",  
+                              "phase_targets_subset_GRCh37_HP2_bedcov.tsv") %>% 
+  read_tsv(col_names = c("CHROM","START","END","HP2"))
+phase_bedcov_df <- phase_bedcov_total_df %>% 
+  left_join(phase_bedcov_HP1_df) %>% 
+  left_join(phase_bedcov_HP2_df) #%>%  ## only manual curration for GRCH38
+  # left_join(phase_qual_df)
+
+## Calculating Haplotype ratio and phased / unphased ratio
+phase_ratio_df <- phase_bedcov_df %>% 
+  rowwise() %>% 
+  mutate(HPratio = min(HP1, HP2)/ max(HP1, HP2), ## Exp = 1
+         UNratio = (TOTAL - HP1 - HP2)/ TOTAL) # Exp = 0
+```
+HP1 and HP2 are the number of reads assigned to the haplotypes per region calculated using bedcov.
+TOTAL is the number of reads in the data set mapped to the region, includes HP1, HP2, and unphased reads. 
+
+```{r fig.cap = "Phasing ratio statistics for targeted regions. HPratio = min(HP1,HP2)/max(HP1,HP2) and UNratio = (TOTAL - HP1 - HP2)/ TOTAL."}
+phase_ratio_df %>% 
+  select(CHROM, START, HPratio, UNratio) %>% 
+  gather(Metric, Ratio, -CHROM, -START) %>% 
+  ggplot() + 
+    geom_density(aes(x = Ratio, fill = Metric)) + theme_bw()
+```
+
+HPratio of 0 indicates all the phased reads were assigned to one of the two haplotypes. 
+
+```{r fig.cap = "Scatter plot of unphased and haplotype ratios."}
+phase_ratio_df %>% 
+  ggplot() + geom_point(aes(x = HPratio, y = UNratio)) + theme_bw()
+```
+
+
+```{r fig.cap = "Proportion of unphased reads (UN) and reads assigned to the two haplotypes for each of the 220 targeted `easy` regions."}
+phase_count_long <- phase_ratio_df %>% 
+    group_by(CHROM) %>% 
+  mutate(Region = 1:n()) %>% 
+  ungroup() %>% 
+  mutate(UN = TOTAL - HP1 - HP2) %>% 
+  select(CHROM, Region, HP1, HP2, UN) %>% 
+  gather(phase, reads, -CHROM, -Region)
+
+phase_count_long %>% 
+  ggplot() + geom_bar(aes(x = Region, y = reads, fill = phase), 
+                      stat = "identity", position = "fill") + 
+  facet_wrap(~CHROM) + theme_bw()
+```
+
+
+#### Good phasing examples
+```{r}
+best_region <- phase_ratio_df %>% 
+  filter(HPratio > 0.95) %>% 
+  ungroup() %>% 
+  top_n(3, -UNratio) %>% 
+  {paste(.$CHROM, .$START, .$END, "slop1000.png", sep = "_")}
+
+# knitr::include_graphics(here("data","phase_manual_curation", 
+#                              "GRCh37", best_region))
+```
+
+#### Poor phasing examples
+```{r}
+poor_region <- phase_ratio_df %>% 
+  filter(UNratio < 0.4) %>% 
+  ungroup() %>% 
+  top_n(3, -HPratio) %>% 
+  {paste(.$CHROM, .$START, .$END, "slop1000.png", sep = "_")}
+
+# knitr::include_graphics(here("data","phase_manual_curation", 
+#                              "GRCh37", poor_region))
+```
+
 
 #### GRCh38
 Loading phasing eval results
@@ -266,7 +301,7 @@ best_region <- phase_ratio_df %>%
 knitr::include_graphics(here("data","phase_manual_curation", best_region))
 ```
 
-Poor phasing examples
+#### Poor phasing examples
 ```{r}
 poor_region <- phase_ratio_df %>% 
   filter(UNratio < 0.4) %>% 
@@ -299,41 +334,6 @@ as.data.frame(s_info$packages) %>%
 <!-- __BEDtools__ -->
 <!-- ```{r} -->
 <!-- system("bedtools --version",intern = TRUE) -->
-<!-- ``` -->
-
-<!-- Extra code ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
-<!-- Code to investigate differences  in sequencing summary data frames-->
-<!-- There are no reads in the guppy3 dataset that are not in the final dataset -->
-<!-- ```{r} -->
-<!-- guppy3_unique <- merged_df %>% filter(is.na(filename)) -->
-<!-- nrow(guppy3_unique) -->
-<!-- ``` -->
-
-<!-- There are no reads in the final dataset that are not in the guppy3 dataset -->
-<!-- ```{r} -->
-<!-- final_unique <- merged_df %>% filter(is.na(g_filename)) -->
-<!-- nrow(final_unique) -->
-<!-- ``` -->
-
-
-<!-- Additional rows in guppy3 compared to final due to duplicate reads. -->
-
-<!-- Issue with duplicate reads due to ???? -->
-<!-- ```{r} -->
-<!-- duplicate_reads <- merged_df %>%  -->
-<!--     group_by(read_id) %>%  -->
-<!--     mutate(count = n()) %>%  -->
-<!--     filter(count > 1) -->
-<!-- ``` -->
-
-
-<!-- run_ids for duplicate reads -->
-<!-- ```{r} -->
-<!-- duplicate_reads %>%  -->
-<!--     ungroup() %>%  -->
-<!--     select(g_filename, run_id) %>%  -->
-<!--     distinct() %>%  -->
-<!--     arrange(run_id) -->
 <!-- ``` -->
 
 

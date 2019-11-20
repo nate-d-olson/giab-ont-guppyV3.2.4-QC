@@ -1,0 +1,134 @@
+---
+title: "Dataset Completion Validation"
+author: "Nate Olson"
+author: "Nate Olson"
+date: '`r Sys.Date()`'
+output: 
+    bookdown::html_document2:
+        toc: true
+        toc_float: true
+        df_print: paged
+        code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+```
+
+# Overview 
+__Objective__: Verify the Guppy 3.2.4 re-basecalled GIAB UL dataset contains all 
+reads in the final GIAB UL dataset.  
+
+
+__Approach__: Compare dataset read id composition between final release 
+sequencing summary file and Guppy 3.2.4 sequencing_summary.txt files.  
+
+# Analysis
+Verify number of reads and read length distributions are similar between guppy V3.2.4 and final release.  
+
+<!-- Code copied from `~/Projects/giab-ultra-long-ont/guppy_3.2_qc/analysis/Rmd` on Nate's iMac -->
+
+`ultra-long-ont.sequencing_summary.txt.gz` available at `ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/HG002_NA24385_son/Ultralong_OxfordNanopore/final/ultra-long-ont.sequencing_summary.txt.gz`
+
+
+## File MD5 check
+Verifying MD5 from giab ftp site for final sequencing summary combined file with local file MD5. 
+
+```{r}
+final_seq_summary <- here("data","final", 
+                          "ultra-long-ont.sequencing_summary.txt.gz")
+
+final_seq_summary_md5 <- tools::md5sum(files = final_seq_summary)
+
+## Veriftying MD5 check matches MD5 from giab ftp site
+final_seq_summary_md5 == "2ee553ece780a45f2e477ef21106b609"
+```
+
+## Loading Final Sequencing Summary Data
+```{r}
+final_df <- read_tsv(final_seq_summary)
+```
+
+## Loading Guppy V3.2.4 Sequencing Summary Data
+```{r message = FALSE}
+guppy3_df <- list.files(path = "data/guppy_V3.2.4/sequencing_summary", 
+                        full.names = TRUE, 
+                        recursive = TRUE, pattern = "sequencing_summary.txt") %>% 
+    set_names(str_extract(.,"(?<=fastq/).*(?=/s)")) %>% 
+    map_dfr(read_tsv)
+```
+
+## Comparing Combined Sequencing Summary Files
+Data frames combined by read_id and other shared columns.  
+The merged data frame will have the same number of rows as the individual data frames if the two datasets contain the same reads.
+
+```{r}
+merged_df <- guppy3_df %>% 
+    select(read_id, filename, passes_filtering) %>% 
+    rename(g_filename = filename, g_passes = passes_filtering) %>% 
+    full_join(final_df)
+```
+
+
+```{r}
+nrow(merged_df) == nrow(guppy3_df)
+nrow(merged_df) == nrow(final_df)
+```
+
+
+# Conclusions
+The Guppy V3.2.4 re-basecalled dataset contains the same set of read is as the final release dataset. 
+
+# System Information
+
+```{r}
+s_info <- devtools::session_info()
+print(s_info$platform)
+```
+
+## Loaded Packages
+```{r}
+as.data.frame(s_info$packages) %>% 
+  filter(attached) %>% 
+  select(package, loadedversion, date, source) %>% 
+  knitr::kable()
+```
+
+
+
+<!-- Extra code ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!-- Code to investigate differences  in sequencing summary data frames-->
+<!-- There are no reads in the guppy3 dataset that are not in the final dataset -->
+<!-- ```{r} -->
+<!-- guppy3_unique <- merged_df %>% filter(is.na(filename)) -->
+<!-- nrow(guppy3_unique) -->
+<!-- ``` -->
+
+<!-- There are no reads in the final dataset that are not in the guppy3 dataset -->
+<!-- ```{r} -->
+<!-- final_unique <- merged_df %>% filter(is.na(g_filename)) -->
+<!-- nrow(final_unique) -->
+<!-- ``` -->
+
+
+<!-- Additional rows in guppy3 compared to final due to duplicate reads. -->
+
+<!-- Issue with duplicate reads due to ???? -->
+<!-- ```{r} -->
+<!-- duplicate_reads <- merged_df %>%  -->
+<!--     group_by(read_id) %>%  -->
+<!--     mutate(count = n()) %>%  -->
+<!--     filter(count > 1) -->
+<!-- ``` -->
+
+
+<!-- run_ids for duplicate reads -->
+<!-- ```{r} -->
+<!-- duplicate_reads %>%  -->
+<!--     ungroup() %>%  -->
+<!--     select(g_filename, run_id) %>%  -->
+<!--     distinct() %>%  -->
+<!--     arrange(run_id) -->
+<!-- ``` -->

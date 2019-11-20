@@ -1,1 +1,10 @@
 ## QC of Re-basecalled GIAB-UL dataset using guppy V3.2.4
+
+ - analysis prep script 
+    - make_phase_eval_bed.sh
+    - make_subset_phase_eval_beds.Rmd
+    - get_phased_target_region_stats.sh
+    - igv batch scripts
+    - sync_seq_summary  
+
+- analysis.Rmd - contains analysis and report
