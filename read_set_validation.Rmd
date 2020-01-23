@@ -1,7 +1,6 @@
 ---
 title: "Dataset Completion Validation"
 author: "Nate Olson"
-author: "Nate Olson"
 date: '`r Sys.Date()`'
 output: 
     bookdown::html_document2:
@@ -55,14 +54,22 @@ final_df <- read_tsv(final_seq_summary)
 ```{r message = FALSE}
 guppy3_df <- list.files(path = "data/guppy_V3.2.4/sequencing_summary", 
                         full.names = TRUE, 
-                        recursive = TRUE, pattern = "sequencing_summary.txt") %>% 
+                        recursive = TRUE, 
+                        pattern = "sequencing_summary.txt") %>% 
     set_names(str_extract(.,"(?<=fastq/).*(?=/s)")) %>% 
     map_dfr(read_tsv)
 ```
 
+```{r}
+release_df <- read_tsv(here("data", "guppy_V3.2.4", "release", 
+                            "combined.sequencing_summary.txt.gz"))
+```
+
+
 ## Comparing Combined Sequencing Summary Files
 Data frames combined by read_id and other shared columns.  
 The merged data frame will have the same number of rows as the individual data frames if the two datasets contain the same reads.
+The mislabeled UB flowcells were basecalled. 
 
 ```{r}
 merged_df <- guppy3_df %>% 
@@ -77,6 +84,51 @@ nrow(merged_df) == nrow(guppy3_df)
 nrow(merged_df) == nrow(final_df)
 ```
 
+```{r}
+merged_df %>% filter(is.na(g_filename)) %>% nrow()
+```
+```{r}
+merged_df %>% filter(is.na(filename)) %>% nrow()
+```
+
+
+## Comparing Combined Sequencing Summary Files
+Data frames combined by read_id and other shared columns.  
+
+
+```{r}
+release_merged_df <- release_df %>% 
+    select(read_id, passes_filtering) %>% 
+    mutate(g_filename = "release") %>% 
+    rename(g_passes = passes_filtering) %>% 
+    full_join(final_df)
+```
+
+
+```{r}
+release_merged_df %>% filter(is.na(g_filename)) %>% nrow()
+```
+
+```{r}
+release_merged_df %>% filter(is.na(filename)) %>% nrow()
+```
+
+Run IDs for missing reads
+```{r}
+run_ids <- release_merged_df %>% filter(is.na(g_filename)) %>% {.$run_id} %>% unique()
+```
+
+Run IDs for mislabeled reads
+```{r}
+mis_labeled_run_ids <- read_lines(here("data", "final",
+                                       "mis-labeled-sample_run-ids.txt"))
+```
+
+```{r}
+run_ids == mis_labeled_run_ids
+```
+
+All of the reads not in the guppy 3.2.4 release seq summary file not in the "final" release are from the mis-labeled runs.
 
 # Conclusions
 The Guppy V3.2.4 re-basecalled dataset contains the same set of read is as the final release dataset. 
