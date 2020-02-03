@@ -1,0 +1,82 @@
+---
+title: "SRA Submission Metadata Table"
+author: "Nate Olson"
+date: "1/27/2020"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(here)
+```
+
+## Summary
+Generating metadata table for HG002 GIAB ONT UL dataset.
+
+
+```{r}
+ont_metadata <- read_csv(here("resources", "flowcell_metadata.csv"))
+sra_table <- read_xlsx(here("resources", "SRA_metadata.xlsx"), 
+                       sheet = "SRA_data")
+```
+
+```{r}
+ont_metadata
+```
+
+```{r}
+colnames(sra_table)
+```
+
+TODO
+1. Check SRA table description
+2. prepare files for submission  
+    1. MD5 sums?  
+    2. tar fast5 files - in progress
+
+
+```{r}
+ont_sra <- ont_metadata %>% 
+    rename(library_ID = flowcell_id,
+           instrument_model = platform) %>% 
+    mutate(bioproject_accession = "PRJNA200694",
+           biosample_accession = "SAMN04299540",
+           title = "Whole Genome Sequencing of Genome In A Bottle HG002 Unsheared Genomic DNA using ONT.",
+           library_strategy = "WGS",
+           library_source = "GENOMIC",
+           library_selection = "RANDOM",
+           library_layout = "Single",
+           platform = "OXFORD_NANOPORE",
+           assembly = "GCA_000001405.15_GRCh38_no_alt_analysis_set",
+           filetype = "bam",
+           filename = paste0(library_ID, "_GRCh38.bam"),
+           filename2 = paste0(library_ID, "_fast5.tar.gz")) %>% 
+    mutate(lab = case_when(
+        lab == "JIMB" ~ "the Joint Initiative for Metrology in Biology",
+        lab == "NOTT" ~ "Matthew Loose's laboratory at the University of Nottingham",
+        lab == "UB" ~ "Nick Loman's laboratory at the University of Birmingham",
+        lab == "ASHLEY" ~ "Euan Ashley's laboratory at Stanford Medical School")) %>% 
+    mutate(design_description = paste("Ultralong Oxford Nanopore sequencing of Genome in a Bottle Ashkenazi son cell line HG002 (GM24385) (Jain, et al 2018, https://doi.org/10.1038/nbt.4060).",
+                                      "Sequencing was performed on", date, "at ", paste0(lab,"."), 
+                                      "DNA was prepared using various modified versions of Josh Quick's protocol (https://dx.doi.org/10.17504/protocols.io.mrxc57n).",
+                                      "Sequencing was performed on the", instrument_model, "using a", type, "flowcell and", kit, "sequencing kit.",
+                                      "Basecalling was performed using Guppy V3.2.4 (https://nanoporetech.com/) and", config, "configuration file.",
+                                      "Reads were aligned to the human genome reference GRCh38 without alts or decoys (GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz)", 
+                                      "using minimap2 (https://github.com/lh3/minimap2, Li 2018 https://doi.org/10.1093/bioinformatics/bty191)."
+                                      )) %>% 
+    select(biosample_accession, library_ID, title, 
+           library_strategy, library_source, library_selection, 
+           library_layout, platform, instrument_model, 
+           design_description, filetype, filename, filename2, assembly)
+```
+
+```{r}
+write_tsv(ont_sra, "sra_submission_metadata_tbl.tsv")
+```
+
+```{r}
+ont_sra %>% filter(!str_detect(library_ID, "PAD")) %>% 
+    write_tsv("sra_submission_metadata_tbl_no_ashley.tsv")
+```
+
